@@ -1,7 +1,7 @@
 # Salesive Dropshipping Importer (Droppy)
 
-A [Salesive](https://salesive.com) app for **dropshipping**: paste an **Amazon,
-AliExpress or MercadoLibre** product URL, and it scrapes the product, converts the
+A [Salesive](https://salesive.com) app for **dropshipping**: paste an **Amazon or
+MercadoLibre** product URL, and it scrapes the product, converts the
 price to **Naira (₦)** with your markup, lets you edit the preview, and imports it
 into the store's Salesive catalog.
 
@@ -34,7 +34,7 @@ What you can do:
 ## How an import works
 
 1. **Scrape** — you paste a product URL; the server validates the hostname
-   (Amazon / AliExpress / MercadoLibre only — an SSRF guard), then runs
+   (Amazon / MercadoLibre only — an SSRF guard), then runs
    `@soblend/scraper`'s `ProductWatcher` for that platform. When the price or
    description comes back empty, the server falls back to the page's Open Graph /
    JSON-LD metadata to fill the gaps.

@@ -64,7 +64,7 @@ export default function Install() {
                     className="animate-splash mt-3 max-w-xs text-sm leading-relaxed text-brand-100/80"
                     style={{ animationDelay: "200ms" }}
                 >
-                    Import products from Amazon, AliExpress and MercadoLibre — priced
+                    Import products from Amazon and MercadoLibre — priced
                     in Naira with your markup — right into your Salesive store.
                 </p>
 

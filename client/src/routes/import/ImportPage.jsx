@@ -44,7 +44,7 @@ function platformTone(platform) {
 
 // The importer, the app's landing page.
 //
-//   Step 1  paste a product URL (Amazon / AliExpress / MercadoLibre), pick a
+//   Step 1  paste a product URL (Amazon / MercadoLibre), pick a
 //           category and set the markup %.
 //   Step 2  scrape to an editable preview (title, price in ₦, description, images).
 //   Step 3  import to POST /api/import, then save to the store catalog.
@@ -226,7 +226,7 @@ export default function ImportPage() {
         <div className="space-y-6 pb-4">
             <PageHeader
                 title="Import a product"
-                subtitle="Paste an Amazon, AliExpress or MercadoLibre link. We scrape it, convert the price to Naira and add it to your store catalog."
+                subtitle="Paste an Amazon or MercadoLibre link. We scrape it, convert the price to Naira and add it to your store catalog."
             />
 
             <Stepper step={step} />
@@ -247,7 +247,7 @@ export default function ImportPage() {
                                 </span>
                                 <Input
                                     id="product-url"
-                                    placeholder="https://www.amazon.com/dp/…  ·  https://www.aliexpress.com/item/…"
+                                    placeholder="https://www.amazon.com/dp/…  ·  https://articulo.mercadolibre.com…"
                                     value={url}
                                     onChange={(e) => setUrl(e.target.value)}
                                     onKeyDown={(e) =>

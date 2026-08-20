@@ -44,9 +44,17 @@ import "puppeteer-extra-plugin-user-data-dir";
 //     MetaDataFinder's Open Graph/JSON-LD fallback to fill the gaps, then
 //     normalise everything to ONE shape for the preview form.
 
+// AliExpress is disabled for now: AliExpress's anti-bot (Alibaba's "Baxia" WAF)
+// blocks datacenter/hosting IP ranges as a category, not any specific cloud —
+// confirmed against both Vercel and a dedicated VPS, both got served an empty
+// challenge page instead of product data. Fixing it for real needs a
+// residential/mobile-IP proxy, not more puppeteer/stealth config. The
+// aliexpress-product-scraper machinery below (and its Vercel bundling in
+// vercel.json / the static shim imports above) is left in place, unused, so
+// re-enabling later is just adding the AliExpress entries back to SUPPORTED /
+// SUPPORTED_HOSTS once a real proxy is wired up (see SCRAPE_PROXY_URL).
 const SUPPORTED = [
     { host: "amazon.com", name: "Amazon", scrape: (w, url) => w.scrapeAmazon(url) },
-    { host: "aliexpress.com", name: "AliExpress", scrape: (w, url) => w.scrapeAliExpress(url) },
     { host: "mercadolibre.com", name: "MercadoLibre", scrape: (w, url) => w.scrapeMercadoLibre(url) },
 ];
 
@@ -62,8 +70,6 @@ const SUPPORTED_HOSTS = [
     "amazon.com", "amazon.ca", "amazon.com.mx", "amazon.com.br", "amazon.co.uk",
     "amazon.de", "amazon.fr", "amazon.it", "amazon.es", "amazon.nl", "amazon.se",
     "amazon.pl", "amazon.in", "amazon.ae", "amazon.sa", "amazon.sg", "amazon.jp",
-    // AliExpress
-    "aliexpress.com", "aliexpress.ru",
     // MercadoLibre
     "mercadolibre.com", "mercadolibre.com.ar", "mercadolibre.com.mx",
     "mercadolibre.com.br", "mercadolibre.com.co", "mercadolibre.cl",
@@ -79,9 +85,7 @@ function matchPlatform(host) {
         (d) => host === d || host.endsWith(`.${d}`),
     );
     if (!domain) return null;
-    if (domain.startsWith("amazon")) return SUPPORTED[0];
-    if (domain.startsWith("aliexpress")) return SUPPORTED[1];
-    return SUPPORTED[2];
+    return SUPPORTED.find((p) => domain.startsWith(p.host.split(".")[0])) || null;
 }
 
 export function detectPlatform(url) {
@@ -121,15 +125,42 @@ function withTimeout(promise, ms) {
 // passthrough. Loaded lazily (and only when actually on Vercel) so local dev
 // keeps using your normal installed Chrome untouched and never pays the
 // ~65MB import cost.
+//
+// Even with that fixed, AliExpress still silently starves the scrape of data
+// when the request comes from Vercel's/AWS's datacenter IP range — the page
+// loads (no launch/crash error) but never fires the product-data API call or
+// populates window.runParams within the package's 15s poll window. That's IP
+// reputation, not browser fingerprinting, so no puppeteer/stealth config fixes
+// it — the request itself needs to originate from a non-datacenter IP. Set
+// SCRAPE_PROXY_URL to an upstream HTTP(S) proxy ("http://user:pass@host:port",
+// from any residential/rotating-IP provider — Bright Data, Oxylabs, IPRoyal,
+// Smartproxy, ScraperAPI's proxy mode, …) to route through it.
+//
+// Chrome's own `--proxy-server` flag can't carry a username:password — it
+// ignores embedded userinfo and would otherwise need an in-browser
+// `page.authenticate()` call, which aliexpress-product-scraper doesn't expose
+// a hook for (it owns the `page` object internally). proxy-chain sidesteps
+// that: it runs a small local proxy that authenticates to the upstream proxy
+// on our behalf, so Chrome just talks to an unauthenticated local address.
 let cachedPuppeteerOptions = null;
-async function vercelPuppeteerOptions() {
-    if (!process.env.VERCEL) return {};
+async function buildPuppeteerOptions() {
     if (cachedPuppeteerOptions) return cachedPuppeteerOptions;
-    const { default: chromium } = await import("@sparticuz/chromium");
-    cachedPuppeteerOptions = {
-        executablePath: await chromium.executablePath(),
-        args: chromium.args,
-    };
+
+    const options = {};
+
+    if (process.env.VERCEL) {
+        const { default: chromium } = await import("@sparticuz/chromium");
+        options.executablePath = await chromium.executablePath();
+        options.args = [...chromium.args];
+    }
+
+    if (process.env.SCRAPE_PROXY_URL) {
+        const { anonymizeProxy } = await import("proxy-chain");
+        const localProxyUrl = await anonymizeProxy(process.env.SCRAPE_PROXY_URL);
+        options.args = [...(options.args || []), `--proxy-server=${localProxyUrl}`];
+    }
+
+    cachedPuppeteerOptions = options;
     return cachedPuppeteerOptions;
 }
 
@@ -143,7 +174,7 @@ async function scrapeAliExpressProduct(url) {
         return { success: false, error: "Could not read the AliExpress product id from that URL." };
     }
 
-    const puppeteerOptions = await vercelPuppeteerOptions();
+    const puppeteerOptions = await buildPuppeteerOptions();
     const data = await withTimeout(
         scrapeAliExpress(productId, { timeout: 60_000, reviewsCount: 0, puppeteerOptions }),
         ALIEXPRESS_TIMEOUT_MS,
@@ -322,7 +353,7 @@ export async function scrapeProduct(url) {
     if (!platform) {
         return {
             success: false,
-            error: "Unsupported URL. Paste an Amazon, AliExpress or MercadoLibre product link.",
+            error: "Unsupported URL. Paste an Amazon or MercadoLibre product link.",
         };
     }
 
