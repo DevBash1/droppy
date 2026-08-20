@@ -5,7 +5,8 @@
     "outputDirectory": "dist",
     "functions": {
         "api/index.js": {
-            "includeFiles": "node_modules/{puppeteer-extra-plugin-*/**,@sparticuz/chromium/bin/**}"
+            "includeFiles": "node_modules/{puppeteer-extra-plugin-*/**,@sparticuz/chromium/bin/**}",
+            "maxDuration": "max"
         }
     },
     "rewrites": [
