@@ -1,6 +1,24 @@
 import { ProductWatcher, MetaDataFinder } from "@soblend/scraper";
 import scrapeAliExpress from "aliexpress-product-scraper";
 
+// Force these into the Vercel serverless bundle. aliexpress-product-scraper's
+// stealth plugin resolves two of its evasion's dependencies — the
+// user-preferences and user-data-dir plugins — via puppeteer-extra's runtime
+// `require(name)` resolver (puppeteer-extra/dist/index.cjs.js), not a normal
+// static import. Vercel's function bundler only traces static imports, so it
+// silently drops anything reached only that way — first the plugins
+// themselves ("Cannot find module 'puppeteer-extra-plugin-user-preferences'"),
+// then, once those were force-included via vercel.json, THEIR own deps
+// (fs-extra, rimraf, …), because a file added by vercel.json's `includeFiles`
+// is copied verbatim without being re-traced. A real static import here makes
+// the bundler trace each package's full dependency tree correctly, so nothing
+// further down the chain needs to be hand-enumerated. The evasion submodules
+// themselves (puppeteer-extra-plugin-stealth/evasions/*) are still genuinely
+// dynamic (their filenames are computed at runtime) — those stay covered by
+// the includeFiles glob in vercel.json.
+import "puppeteer-extra-plugin-user-preferences";
+import "puppeteer-extra-plugin-user-data-dir";
+
 // ── Server-side product scraping facade ──────────────────────────────────────
 //
 // The browser never talks to the shop sites — it sends a product URL to our own
