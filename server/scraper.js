@@ -112,6 +112,27 @@ function withTimeout(promise, ms) {
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+// aliexpress-product-scraper launches full `puppeteer`, which resolves Chrome
+// from a local download cache (~/.cache/puppeteer) — populated on `npm
+// install`, but that cache doesn't exist on Vercel's read-only function
+// filesystem, so the launch fails with "Could not find Chrome". @sparticuz/
+// chromium ships a Lambda-compatible Chromium build instead; on Vercel we hand
+// its executablePath/args through the scraper's own `puppeteerOptions`
+// passthrough. Loaded lazily (and only when actually on Vercel) so local dev
+// keeps using your normal installed Chrome untouched and never pays the
+// ~65MB import cost.
+let cachedPuppeteerOptions = null;
+async function vercelPuppeteerOptions() {
+    if (!process.env.VERCEL) return {};
+    if (cachedPuppeteerOptions) return cachedPuppeteerOptions;
+    const { default: chromium } = await import("@sparticuz/chromium");
+    cachedPuppeteerOptions = {
+        executablePath: await chromium.executablePath(),
+        args: chromium.args,
+    };
+    return cachedPuppeteerOptions;
+}
+
 // ── AliExpress (aliexpress-product-scraper) ──────────────────────────────────
 // The package launches a stealth browser and intercepts AliExpress's product
 // API, returning { title, description, images[], salePrice:{min,max}, … }.
@@ -122,8 +143,9 @@ async function scrapeAliExpressProduct(url) {
         return { success: false, error: "Could not read the AliExpress product id from that URL." };
     }
 
+    const puppeteerOptions = await vercelPuppeteerOptions();
     const data = await withTimeout(
-        scrapeAliExpress(productId, { timeout: 60_000, reviewsCount: 0 }),
+        scrapeAliExpress(productId, { timeout: 60_000, reviewsCount: 0, puppeteerOptions }),
         ALIEXPRESS_TIMEOUT_MS,
     );
     if (!data || !data.title) {
