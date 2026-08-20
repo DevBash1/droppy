@@ -1,0 +1,35 @@
+{
+    "name": "salesive-dropshipping-app",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Dropshipping importer for Salesive — paste an Amazon/AliExpress/MercadoLibre product URL, scrape it, convert the price to Naira with a markup, and import it into the store catalog. React + Tailwind frontend and a Node/Express backend on a single port, with OAuth install, a per-store session, and socket.io for live events.",
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "dev": "node server/index.js",
+        "build": "node client/build.mjs",
+        "start": "cross-env NODE_ENV=production node server/index.js",
+        "preview": "npm run build && npm start"
+    },
+    "dependencies": {
+        "@soblend/scraper": "^1.0.0",
+        "@vitejs/plugin-react": "^4.3.1",
+        "aliexpress-product-scraper": "^3.0.0",
+        "autoprefixer": "^10.4.19",
+        "cross-env": "^10.1.0",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "mongodb": "^6.21.0",
+        "morgan": "^1.11.0",
+        "postcss": "^8.4.39",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-router-dom": "^6.30.4",
+        "socket.io": "^4.7.5",
+        "socket.io-client": "^4.7.5",
+        "tailwindcss": "^3.4.6",
+        "vite": "^5.3.3"
+    }
+}

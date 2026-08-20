@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h1, h2, h3, h4 {
+        @apply font-display;
+    }
+}
+
+/* Hide scrollbars on mobile (< md / 768px) while keeping scroll functional — the
+   panes still scroll by touch, just without a visible bar. Desktop keeps its
+   scrollbars so lists are obviously scrollable with a mouse. */
+@media (max-width: 767.98px) {
+    * {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* legacy Edge/IE */
+    }
+    *::-webkit-scrollbar {
+        display: none; /* Chrome / Safari / Edge */
+    }
+}
+
+/* Splash entrance — a gentle fade + rise. Elements stagger via inline
+   animation-delay. `both` keeps them hidden until their delay elapses. */
+@keyframes splash-rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-splash {
+    animation: splash-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-splash {
+        animation: none;
+    }
+}
+
+/* Light blue app surface — matches the Droppy brand. A faint dotted grain gives
+   it texture without hurting text contrast. */
+.brand-surface {
+    background-color: #f3f9ff;
+    background-image: radial-gradient(
+        rgba(0, 102, 255, 0.05) 1px,
+        transparent 1.5px
+    );
+    background-size: 16px 16px;
+}
+
+/* Brand tile — a rounded blue gradient (logo colors) for app icons and the
+   install splash. */
+.brand-tile {
+    background-image: linear-gradient(160deg, #00a3ff, #0066ff);
+}
+
+/* Skeleton shimmer for loading placeholders (image slots, catalog cards). */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton {
+    background-image: linear-gradient(
+        100deg,
+        rgba(15, 59, 140, 0.06) 30%,
+        rgba(15, 59, 140, 0.12) 45%,
+        rgba(15, 59, 140, 0.06) 60%
+    );
+    background-size: 250% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton {
+        animation: none;
+    }
+}
+
+/* Safe-area padding for the mobile bottom tab bar (notches / home indicators). */
+.pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
